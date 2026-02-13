@@ -1,291 +1,352 @@
-# Java-project
-"""
-Smart Task Manager System
-Implements task management using Array, Queue, and Stack data structures
-"""
+# Java
+import java.util.*;
 
-from collections import deque
-from datetime import datetime
+/**
+ * Railway Ticket Counter Simulation
+ * 
+ * This program simulates a railway ticket counter using:
+ * - Queue: To manage customers waiting in line (FIFO - First In First Out)
+ * - Stack: To track cancelled tickets (LIFO - Last In First Out)
+ * - Array: To store all issued tickets
+ * 
+ * @author Railway System
+ * @version 1.0
+ */
 
+class Customer {
+    private int customerId;
+    private String name;
+    private String destination;
+    private double ticketPrice;
+    private String ticketNumber;
+    
+    /**
+     * Constructor to create a new customer
+     */
+    public Customer(int customerId, String name, String destination, double ticketPrice) {
+        this.customerId = customerId;
+        this.name = name;
+        this.destination = destination;
+        this.ticketPrice = ticketPrice;
+        this.ticketNumber = "TKT" + String.format("%04d", customerId);
+    }
+    
+    // Getters
+    public int getCustomerId() { return customerId; }
+    public String getName() { return name; }
+    public String getDestination() { return destination; }
+    public double getTicketPrice() { return ticketPrice; }
+    public String getTicketNumber() { return ticketNumber; }
+    
+    @Override
+    public String toString() {
+        return String.format("| %-12s | %-20s | %-15s | Rs. %-8.2f |", 
+                           ticketNumber, name, destination, ticketPrice);
+    }
+}
 
-class Task:
-    """Represents a single task with priority and metadata"""
+public class RailwayTicketCounter {
     
-    def __init__(self, task_id, description, priority):
-        self.task_id = task_id
-        self.description = description
-        self.priority = priority  # 1=High, 2=Medium, 3=Low
-        self.created_at = datetime.now()
-        self.status = "Pending"
+    // Data Structures
+    private Queue<Customer> customerQueue;      // Queue for waiting customers
+    private Stack<Customer> cancelledStack;     // Stack for cancelled tickets
+    private ArrayList<Customer> issuedTickets;  // Array to store all issued tickets
+    private int nextCustomerId;
     
-    def __str__(self):
-        priority_map = {1: "High", 2: "Medium", 3: "Low"}
-        return f"[{self.task_id}] {self.description} | Priority: {priority_map[self.priority]} | Status: {self.status}"
-
-
-class SmartTaskManager:
-    """
-    Task Manager using multiple data structures:
-    - Array: stores all tasks
-    - Queue: processes normal priority tasks (FIFO)
-    - Stack: tracks processed tasks for undo functionality (LIFO)
-    """
+    /**
+     * Constructor - Initialize all data structures
+     */
+    public RailwayTicketCounter() {
+        customerQueue = new LinkedList<>();      // LinkedList implements Queue interface
+        cancelledStack = new Stack<>();          // Stack for LIFO operations
+        issuedTickets = new ArrayList<>();       // ArrayList for dynamic array
+        nextCustomerId = 1;
+    }
     
-    def __init__(self):
-        self.all_tasks = []  # Array to store all tasks
-        self.task_queue = deque()  # Queue for normal task processing
-        self.processed_stack = []  # Stack for undo functionality
-        self.next_id = 1
+    /**
+     * Add a customer to the queue
+     * Uses ENQUEUE operation (adds to rear of queue)
+     */
+    public void addCustomer(String name, String destination, double ticketPrice) {
+        if (name == null || name.trim().isEmpty()) {
+            System.out.println("❌ Error: Customer name cannot be empty!");
+            return;
+        }
+        if (destination == null || destination.trim().isEmpty()) {
+            System.out.println("❌ Error: Destination cannot be empty!");
+            return;
+        }
+        if (ticketPrice <= 0) {
+            System.out.println("❌ Error: Ticket price must be positive!");
+            return;
+        }
+        
+        Customer customer = new Customer(nextCustomerId, name, destination, ticketPrice);
+        customerQueue.offer(customer);  // ENQUEUE - add to queue
+        nextCustomerId++;
+        
+        System.out.println("\n✅ Customer added to queue successfully!");
+        System.out.println("   Name: " + name);
+        System.out.println("   Destination: " + destination);
+        System.out.println("   Ticket Price: Rs. " + ticketPrice);
+        System.out.println("   Position in queue: " + customerQueue.size());
+    }
     
-    def add_task(self, description, priority):
-        """
-        Add a new task with priority
-        Priority: 1=High, 2=Medium, 3=Low
-        """
-        if priority not in [1, 2, 3]:
-            print("❌ Invalid priority! Use 1 (High), 2 (Medium), or 3 (Low)")
-            return None
+    /**
+     * Serve the next customer in queue
+     * Uses DEQUEUE operation (removes from front of queue)
+     * Issues ticket and stores in array
+     */
+    public void serveCustomer() {
+        if (customerQueue.isEmpty()) {
+            System.out.println("\n⚠️  No customers in queue! Queue is empty.");
+            return;
+        }
         
-        task = Task(self.next_id, description, priority)
-        self.all_tasks.append(task)  # Store in array
-        self.task_queue.append(task)  # Add to queue
-        self.next_id += 1
+        Customer customer = customerQueue.poll();  // DEQUEUE - remove from front
+        issuedTickets.add(customer);               // Add to issued tickets array
         
-        print(f"✅ Task added successfully: {task}")
-        return task
+        System.out.println("\n" + "=".repeat(70));
+        System.out.println("🎫 TICKET ISSUED SUCCESSFULLY!");
+        System.out.println("=".repeat(70));
+        System.out.println("   Ticket Number: " + customer.getTicketNumber());
+        System.out.println("   Customer Name: " + customer.getName());
+        System.out.println("   Destination: " + customer.getDestination());
+        System.out.println("   Amount Paid: Rs. " + customer.getTicketPrice());
+        System.out.println("=".repeat(70));
+        System.out.println("   Remaining customers in queue: " + customerQueue.size());
+    }
     
-    def enqueue_task(self, description, priority):
-        """Alias for add_task - explicitly shows queue operation"""
-        return self.add_task(description, priority)
+    /**
+     * Cancel the last issued ticket
+     * Uses PUSH operation on stack (adds to top)
+     * Removes ticket from array
+     */
+    public void cancelLastTicket() {
+        if (issuedTickets.isEmpty()) {
+            System.out.println("\n⚠️  No tickets issued yet! Cannot cancel.");
+            return;
+        }
+        
+        // Remove last ticket from array (last issued)
+        Customer cancelledCustomer = issuedTickets.remove(issuedTickets.size() - 1);
+        
+        // Push to cancelled stack (PUSH operation)
+        cancelledStack.push(cancelledCustomer);
+        
+        System.out.println("\n" + "=".repeat(70));
+        System.out.println("❌ TICKET CANCELLED!");
+        System.out.println("=".repeat(70));
+        System.out.println("   Ticket Number: " + cancelledCustomer.getTicketNumber());
+        System.out.println("   Customer Name: " + cancelledCustomer.getName());
+        System.out.println("   Refund Amount: Rs. " + cancelledCustomer.getTicketPrice());
+        System.out.println("=".repeat(70));
+    }
     
-    def dequeue_task(self):
-        """
-        Process the next task from queue (FIFO - First In First Out)
-        Moves task from queue to processed stack
-        """
-        if not self.task_queue:
-            print("⚠️  No tasks in queue to process!")
-            return None
+    /**
+     * Display all customers waiting in queue
+     * Shows FIFO order (first customer added will be served first)
+     */
+    public void displayQueue() {
+        if (customerQueue.isEmpty()) {
+            System.out.println("\n📋 Queue is empty - No customers waiting");
+            return;
+        }
         
-        # Get task based on priority (process high priority first)
-        task = self._get_highest_priority_task()
+        System.out.println("\n" + "=".repeat(70));
+        System.out.println("👥 CUSTOMERS WAITING IN QUEUE (FIFO Order)");
+        System.out.println("=".repeat(70));
+        System.out.println("Position | Customer ID | Name                 | Destination");
+        System.out.println("-".repeat(70));
         
-        if task:
-            task.status = "Completed"
-            self.processed_stack.append(task)  # Push to stack for undo
-            print(f"✅ Task processed: {task}")
-            return task
-        
-        return None
+        int position = 1;
+        for (Customer customer : customerQueue) {
+            System.out.printf("   %-6d | %-11d | %-20s | %-15s\n",
+                            position, customer.getCustomerId(), 
+                            customer.getName(), customer.getDestination());
+            position++;
+        }
+        System.out.println("=".repeat(70));
+        System.out.println("Total customers in queue: " + customerQueue.size());
+    }
     
-    def _get_highest_priority_task(self):
-        """Helper method to get highest priority pending task from queue"""
-        if not self.task_queue:
-            return None
+    /**
+     * Display all issued tickets stored in array
+     */
+    public void displayIssuedTickets() {
+        if (issuedTickets.isEmpty()) {
+            System.out.println("\n📋 No tickets issued yet");
+            return;
+        }
         
-        # Find task with highest priority (lowest number)
-        highest_priority_task = min(self.task_queue, key=lambda t: t.priority)
-        self.task_queue.remove(highest_priority_task)
-        return highest_priority_task
+        System.out.println("\n" + "=".repeat(70));
+        System.out.println("🎫 ALL ISSUED TICKETS (Stored in Array)");
+        System.out.println("=".repeat(70));
+        System.out.println("| Ticket No.   | Customer Name        | Destination     | Price        |");
+        System.out.println("-".repeat(70));
+        
+        for (Customer customer : issuedTickets) {
+            System.out.println(customer);
+        }
+        System.out.println("=".repeat(70));
+        System.out.println("Total tickets issued: " + issuedTickets.size());
+    }
     
-    def undo_last_task(self):
-        """
-        Undo the last processed task (LIFO - Last In First Out)
-        Moves task from processed stack back to queue
-        """
-        if not self.processed_stack:
-            print("⚠️  No processed tasks to undo!")
-            return None
+    /**
+     * Display all cancelled tickets from stack
+     * Shows LIFO order (most recently cancelled at top)
+     */
+    public void displayCancelledTickets() {
+        if (cancelledStack.isEmpty()) {
+            System.out.println("\n📋 No cancelled tickets");
+            return;
+        }
         
-        task = self.processed_stack.pop()  # Pop from stack
-        task.status = "Pending"
-        self.task_queue.append(task)  # Add back to queue
+        System.out.println("\n" + "=".repeat(70));
+        System.out.println("❌ CANCELLED TICKETS (Stack - LIFO Order, Top to Bottom)");
+        System.out.println("=".repeat(70));
+        System.out.println("| Ticket No.   | Customer Name        | Destination     | Refund       |");
+        System.out.println("-".repeat(70));
         
-        print(f"↩️  Task undone: {task}")
-        return task
+        // Display stack from top to bottom (using Iterator)
+        Stack<Customer> tempStack = (Stack<Customer>) cancelledStack.clone();
+        while (!tempStack.isEmpty()) {
+            Customer customer = tempStack.pop();
+            System.out.println(customer);
+        }
+        System.out.println("=".repeat(70));
+        System.out.println("Total cancelled tickets: " + cancelledStack.size());
+    }
     
-    def display_all_tasks(self):
-        """Display all tasks in the system"""
-        if not self.all_tasks:
-            print("\n📋 No tasks in the system")
-            return
+    /**
+     * Display system statistics
+     */
+    public void displayStatistics() {
+        System.out.println("\n" + "=".repeat(70));
+        System.out.println("📊 RAILWAY TICKET COUNTER STATISTICS");
+        System.out.println("=".repeat(70));
+        System.out.println("Customers in Queue (waiting):        " + customerQueue.size());
+        System.out.println("Tickets Issued (active):             " + issuedTickets.size());
+        System.out.println("Tickets Cancelled:                   " + cancelledStack.size());
         
-        print("\n" + "="*70)
-        print("📋 ALL TASKS IN SYSTEM")
-        print("="*70)
+        // Calculate total revenue
+        double totalRevenue = 0;
+        for (Customer customer : issuedTickets) {
+            totalRevenue += customer.getTicketPrice();
+        }
         
-        for task in self.all_tasks:
-            status_icon = "✅" if task.status == "Completed" else "⏳"
-            print(f"{status_icon} {task}")
+        double totalRefund = 0;
+        for (Customer customer : cancelledStack) {
+            totalRefund += customer.getTicketPrice();
+        }
         
-        print("="*70)
+        System.out.println("-".repeat(70));
+        System.out.printf("Total Revenue from Active Tickets:   Rs. %.2f\n", totalRevenue);
+        System.out.printf("Total Refunds:                       Rs. %.2f\n", totalRefund);
+        System.out.printf("Net Revenue:                         Rs. %.2f\n", (totalRevenue - totalRefund));
+        System.out.println("=".repeat(70));
+    }
     
-    def display_pending_tasks(self):
-        """Display only pending tasks"""
-        pending = [t for t in self.all_tasks if t.status == "Pending"]
+    /**
+     * Main method - Program entry point with menu-driven interface
+     */
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        RailwayTicketCounter counter = new RailwayTicketCounter();
         
-        if not pending:
-            print("\n⏳ No pending tasks")
-            return
+        System.out.println("\n" + "=".repeat(70));
+        System.out.println("🚂 WELCOME TO RAILWAY TICKET COUNTER SIMULATION");
+        System.out.println("=".repeat(70));
+        System.out.println("This system demonstrates Queue, Stack, and Array data structures");
+        System.out.println("=".repeat(70));
         
-        print("\n" + "="*70)
-        print("⏳ PENDING TASKS")
-        print("="*70)
+        boolean running = true;
         
-        # Sort by priority for display
-        pending_sorted = sorted(pending, key=lambda t: t.priority)
-        for task in pending_sorted:
-            print(f"   {task}")
+        while (running) {
+            // Display menu
+            System.out.println("\n" + "=".repeat(70));
+            System.out.println("📋 MAIN MENU");
+            System.out.println("=".repeat(70));
+            System.out.println("1. Add Customer to Queue");
+            System.out.println("2. Serve Next Customer (Issue Ticket)");
+            System.out.println("3. Cancel Last Issued Ticket");
+            System.out.println("4. Display Queue (Waiting Customers)");
+            System.out.println("5. Display All Issued Tickets");
+            System.out.println("6. Display Cancelled Tickets");
+            System.out.println("7. Display Statistics");
+            System.out.println("8. Exit");
+            System.out.println("=".repeat(70));
+            System.out.print("Enter your choice (1-8): ");
+            
+            try {
+                int choice = scanner.nextInt();
+                scanner.nextLine(); // Consume newline
+                
+                switch (choice) {
+                    case 1:
+                        // Add customer
+                        System.out.println("\n--- ADD CUSTOMER TO QUEUE ---");
+                        System.out.print("Enter customer name: ");
+                        String name = scanner.nextLine();
+                        
+                        System.out.print("Enter destination: ");
+                        String destination = scanner.nextLine();
+                        
+                        System.out.print("Enter ticket price (Rs.): ");
+                        double price = scanner.nextDouble();
+                        scanner.nextLine(); // Consume newline
+                        
+                        counter.addCustomer(name, destination, price);
+                        break;
+                        
+                    case 2:
+                        // Serve customer
+                        counter.serveCustomer();
+                        break;
+                        
+                    case 3:
+                        // Cancel last ticket
+                        counter.cancelLastTicket();
+                        break;
+                        
+                    case 4:
+                        // Display queue
+                        counter.displayQueue();
+                        break;
+                        
+                    case 5:
+                        // Display issued tickets
+                        counter.displayIssuedTickets();
+                        break;
+                        
+                    case 6:
+                        // Display cancelled tickets
+                        counter.displayCancelledTickets();
+                        break;
+                        
+                    case 7:
+                        // Display statistics
+                        counter.displayStatistics();
+                        break;
+                        
+                    case 8:
+                        // Exit
+                        System.out.println("\n" + "=".repeat(70));
+                        System.out.println("👋 Thank you for using Railway Ticket Counter System!");
+                        System.out.println("=".repeat(70));
+                        running = false;
+                        break;
+                        
+                    default:
+                        System.out.println("\n❌ Invalid choice! Please enter a number between 1-8.");
+                }
+                
+            } catch (InputMismatchException e) {
+                System.out.println("\n❌ Invalid input! Please enter a valid number.");
+                scanner.nextLine(); // Clear invalid input
+            }
+        }
         
-        print("="*70)
-    
-    def display_completed_tasks(self):
-        """Display completed tasks (from stack)"""
-        if not self.processed_stack:
-            print("\n✅ No completed tasks")
-            return
-        
-        print("\n" + "="*70)
-        print("✅ COMPLETED TASKS (Stack - Last to First)")
-        print("="*70)
-        
-        # Display in reverse order (most recent first - top of stack)
-        for task in reversed(self.processed_stack):
-            print(f"   {task}")
-        
-        print("="*70)
-    
-    def get_statistics(self):
-        """Display system statistics"""
-        total = len(self.all_tasks)
-        pending = len([t for t in self.all_tasks if t.status == "Pending"])
-        completed = len(self.processed_stack)
-        
-        print("\n" + "="*70)
-        print("📊 TASK STATISTICS")
-        print("="*70)
-        print(f"Total Tasks: {total}")
-        print(f"Pending Tasks: {pending}")
-        print(f"Completed Tasks: {completed}")
-        print(f"Tasks in Queue: {len(self.task_queue)}")
-        print(f"Tasks in Stack: {len(self.processed_stack)}")
-        print("="*70)
-
-
-def demo():
-    """Demonstrate the Smart Task Manager System"""
-    print("\n🚀 SMART TASK MANAGER SYSTEM")
-    print("=" * 70)
-    
-    manager = SmartTaskManager()
-    
-    # Add tasks with different priorities
-    print("\n1️⃣  ADDING TASKS")
-    print("-" * 70)
-    manager.add_task("Complete project documentation", 1)  # High
-    manager.add_task("Review pull requests", 2)  # Medium
-    manager.add_task("Update team on progress", 1)  # High
-    manager.add_task("Organize files", 3)  # Low
-    manager.add_task("Schedule team meeting", 2)  # Medium
-    
-    # Display all tasks
-    manager.display_all_tasks()
-    manager.display_pending_tasks()
-    
-    # Process tasks (dequeue)
-    print("\n2️⃣  PROCESSING TASKS (Dequeue)")
-    print("-" * 70)
-    manager.dequeue_task()  # Should process high priority first
-    manager.dequeue_task()
-    manager.dequeue_task()
-    
-    # Display status
-    manager.display_pending_tasks()
-    manager.display_completed_tasks()
-    
-    # Undo last task
-    print("\n3️⃣  UNDO OPERATIONS (Stack)")
-    print("-" * 70)
-    manager.undo_last_task()  # Undo last processed
-    manager.undo_last_task()  # Undo second last
-    
-    # Display status after undo
-    manager.display_pending_tasks()
-    manager.display_completed_tasks()
-    
-    # Process remaining tasks
-    print("\n4️⃣  PROCESSING REMAINING TASKS")
-    print("-" * 70)
-    while manager.task_queue:
-        manager.dequeue_task()
-    
-    # Final statistics
-    manager.get_statistics()
-    manager.display_all_tasks()
-    
-    print("\n✨ Demo completed!\n")
-
-
-def interactive_mode():
-    """Interactive command-line interface"""
-    manager = SmartTaskManager()
-    
-    print("\n🚀 SMART TASK MANAGER - INTERACTIVE MODE")
-    print("=" * 70)
-    
-    while True:
-        print("\n📌 MENU:")
-        print("1. Add Task (Enqueue)")
-        print("2. Process Task (Dequeue)")
-        print("3. Undo Last Task")
-        print("4. Display All Tasks")
-        print("5. Display Pending Tasks")
-        print("6. Display Completed Tasks")
-        print("7. Show Statistics")
-        print("8. Exit")
-        
-        choice = input("\nEnter your choice (1-8): ").strip()
-        
-        if choice == "1":
-            desc = input("Enter task description: ").strip()
-            print("Priority: 1=High, 2=Medium, 3=Low")
-            try:
-                priority = int(input("Enter priority (1-3): ").strip())
-                manager.enqueue_task(desc, priority)
-            except ValueError:
-                print("❌ Invalid input! Please enter a number.")
-        
-        elif choice == "2":
-            manager.dequeue_task()
-        
-        elif choice == "3":
-            manager.undo_last_task()
-        
-        elif choice == "4":
-            manager.display_all_tasks()
-        
-        elif choice == "5":
-            manager.display_pending_tasks()
-        
-        elif choice == "6":
-            manager.display_completed_tasks()
-        
-        elif choice == "7":
-            manager.get_statistics()
-        
-        elif choice == "8":
-            print("\n👋 Thank you for using Smart Task Manager!")
-            break
-        
-        else:
-            print("❌ Invalid choice! Please enter 1-8.")
-
-
-if __name__ == "__main__":
-    # Run demo first
-    demo()
-    
-    # Ask if user wants interactive mode
-    response = input("Would you like to try interactive mode? (y/n): ").strip().lower()
-    if response == 'y':
-        interactive_mode()
+        scanner.close();
+    }
+}
